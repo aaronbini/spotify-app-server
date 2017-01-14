@@ -70,7 +70,7 @@
 	
 	var app = _angular2.default.module('spotifyApp', [_components2.default, _services2.default, _angularMaterial2.default]);
 	
-	app.constant('apiUrl', ("https://app-spotify.herokuapp.com/") || '/api');
+	app.constant('apiUrl', ("https://app-spotify.herokuapp.com/api") || '/api');
 	
 	app.config(['$mdThemingProvider', function ($mdThemingProvider) {
 	  $mdThemingProvider.theme('default').primaryPalette('teal').accentPalette('deep-orange').backgroundPalette('green').warnPalette('red');
