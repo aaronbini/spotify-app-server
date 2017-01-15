@@ -9,6 +9,11 @@
     padding: 20px;
     margin: auto; }
 
+img {
+  cursor: pointer; }
+  img:hover {
+    opacity: 0.8; }
+
 .md-button {
   background-color: rgba(76, 175, 80, 0.2); }
 

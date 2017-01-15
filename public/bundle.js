@@ -33630,8 +33630,8 @@
 	  var _this = this;
 	
 	  this.$onInit = function () {
-	    _this.errorMessage = null;
-	    _this.featured = null;
+	    // this.errorMessage = null;
+	    // this.featured = null;
 	    spotify.getJa().then(function (res) {
 	      _this.jaRule = res;
 	    }).catch(function (err) {
@@ -33639,18 +33639,22 @@
 	    });
 	  };
 	
+	  //set featured artist, attach unique albums, and attach playable track to album
 	  this.setFeatured = function (featured) {
 	    _this.errorMessage = null;
 	    _this.featured = featured;
 	    var id = featured.artists.items[0].id;
 	    spotify.getArtistAlbums(id).then(function (albums) {
-	      console.log(albums);
 	      _this.albums = albums.items;
 	      return _this.getTracks(_this.albums);
 	    }).then(function (tracks) {
 	      //attach the preview uri to each of this.albums
 	      _this.albums = _this.albums.map(function (album, index) {
-	        album.preview = tracks[index].items[1].preview_url;
+	
+	        //check for existence of track because not always there
+	        if (tracks[index].items[1]) {
+	          album.preview = tracks[index].items[1].preview_url;
+	        }
 	        return album;
 	      });
 	    }).catch(function (err) {
@@ -33658,9 +33662,30 @@
 	    });
 	  };
 	
+	  //handle playing, pausing, and starting new track
 	  this.playTrack = function (url) {
-	    var audio = new Audio(url);
-	    audio.play();
+	
+	    //is the track already being played?
+	    if (_this.preview === url && _this.playing) {
+	      _this.playing = false;
+	      _this.audio.pause();
+	      return;
+	      //is the selected track paused?
+	    } else if (_this.preview === url && !_this.playing) {
+	      _this.playing = true;
+	      _this.audio.play();
+	      return;
+	    }
+	
+	    //selected track is new if here
+	    //
+	    if (_this.audio) {
+	      _this.audio.pause();
+	    }
+	    _this.audio = new Audio(url);
+	    _this.audio.play();
+	    _this.playing = true;
+	    _this.preview = url;
 	  };
 	
 	  //get tracks from each album to play preview
@@ -33714,7 +33739,10 @@
 	    _this.getTracks(_this.albums).then(function (tracks) {
 	      //attach the preview uri to each of this.albums
 	      _this.albums = _this.albums.map(function (album, index) {
-	        album.preview = tracks[index].items[1].preview_url;
+	        //check for existence of track
+	        if (tracks[index].items[1]) {
+	          album.preview = tracks[index].items[1].preview_url;
+	        }
 	        return album;
 	      });
 	    });
