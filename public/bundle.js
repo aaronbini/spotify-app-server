@@ -54,17 +54,17 @@
 	
 	var _components2 = _interopRequireDefault(_components);
 	
-	var _services = __webpack_require__(14);
+	var _services = __webpack_require__(16);
 	
 	var _services2 = _interopRequireDefault(_services);
 	
-	var _angularMaterial = __webpack_require__(16);
+	var _angularMaterial = __webpack_require__(18);
 	
 	var _angularMaterial2 = _interopRequireDefault(_angularMaterial);
 	
-	__webpack_require__(22);
+	__webpack_require__(24);
 	
-	__webpack_require__(26);
+	__webpack_require__(28);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -33587,7 +33587,8 @@
 	var map = {
 		"./display/display.js": 8,
 		"./ja-rule/ja-rule.js": 10,
-		"./search/search.js": 12
+		"./search/search.js": 12,
+		"./top-tracks/top-tracks.js": 14
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -33613,6 +33614,8 @@
 	  value: true
 	});
 	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
 	var _display = __webpack_require__(9);
 	
 	var _display2 = _interopRequireDefault(_display);
@@ -33629,9 +33632,18 @@
 	function controller(spotify) {
 	  var _this = this;
 	
+	  //helper function to clean up titles
+	  function titleClean(string) {
+	    if (string.indexOf('-') > -1) {
+	      return string.split(' -')[0];
+	    }
+	    if (string.indexOf('(') > -1) {
+	      return string.split(' (')[0];
+	    }
+	    return string;
+	  }
+	
 	  this.$onInit = function () {
-	    // this.errorMessage = null;
-	    // this.featured = null;
 	    spotify.getJa().then(function (res) {
 	      _this.jaRule = res;
 	    }).catch(function (err) {
@@ -33639,24 +33651,56 @@
 	    });
 	  };
 	
+	  this.attachTracks = function (tracks) {
+	    //attach the preview uri to each of this.albums
+	    _this.albums = _this.albums.map(function (album, index) {
+	      //check for existence of track because not always there
+	      if (tracks[index].items[1]) {
+	        album.preview = tracks[index].items[1].preview_url;
+	      }
+	      return album;
+	    });
+	  };
+	
 	  //set featured artist, attach unique albums, and attach playable track to album
-	  this.setFeatured = function (featured) {
+	  this.setFeatured = function (featured, type) {
 	    _this.errorMessage = null;
 	    _this.featured = featured;
-	    var id = featured.artists.items[0].id;
-	    spotify.getArtistAlbums(id).then(function (albums) {
-	      _this.albums = albums.items;
+	    _this.artistName = _this.featured.artists.items[0].name;
+	    //set variable to hold Promises
+	    var resolve = void 0;
+	
+	    if (type === 'artist') {
+	      // this.artist = true;
+	      var id = featured.artists.items[0].id;
+	      resolve = Promise.all([spotify.getArtistAlbums(id), spotify.getTopTracks(id)]);
+	    } else {
+	      // this.artist = false;
+	      _this.albums = featured.albums.items;
+	      resolve = Promise.resolve([_this.albums, null]);
+	    }
+	
+	    resolve.then(function (_ref) {
+	      var _ref2 = _slicedToArray(_ref, 2),
+	          albums = _ref2[0],
+	          tracks = _ref2[1];
+	
+	      if (tracks) {
+	        _this.topTracks = tracks;
+	        _this.topTracks.tracks = _this.topTracks.tracks.map(function (track) {
+	          track.name = titleClean(track.name);
+	          return track;
+	        }).map(function (track) {
+	          track.album.name = titleClean(track.album.name);
+	          return track;
+	        });
+	      };
+	      if (type === 'artist') {
+	        _this.albums = albums.items;
+	      }
 	      return _this.getTracks(_this.albums);
 	    }).then(function (tracks) {
-	      //attach the preview uri to each of this.albums
-	      _this.albums = _this.albums.map(function (album, index) {
-	
-	        //check for existence of track because not always there
-	        if (tracks[index].items[1]) {
-	          album.preview = tracks[index].items[1].preview_url;
-	        }
-	        return album;
-	      });
+	      _this.attachTracks(tracks);
 	    }).catch(function (err) {
 	      return console.log(err);
 	    });
@@ -33678,7 +33722,6 @@
 	    }
 	
 	    //selected track is new if here
-	    //
 	    if (_this.audio) {
 	      _this.audio.pause();
 	    }
@@ -33701,7 +33744,7 @@
 /* 9 */
 /***/ function(module, exports) {
 
-	module.exports = "<p ng-if=\"$ctrl.errorMessage\">{{$ctrl.errorMessage}}</p>\n<div class=\"flexy-container\">\n  <ja-rule ng-if=\"$ctrl.jaRule\" \n           class=\"flexy-item\" \n           ja-rule=\"$ctrl.jaRule\" \n           play-track=\"$ctrl.playTrack\"\n           get-tracks=\"$ctrl.getTracks\" \n           error-message=\"$ctrl.errorMessage\">\n  </ja-rule>\n  <search class=\"flexy-item\" set-featured=\"$ctrl.setFeatured\"></search>\n</div>\n<div ng-if=\"$ctrl.featured\">\n   <h3 class=\"center\">Click on The Album Image to Hear a Sampling from the Album</h3>\n   <h2 class=\"center\" style=\"margin-top: 20px; margin-bottom: 20px;\">{{$ctrl.featured.artists.items[0].name}}</h2>\n    <div class=\"flexy-wrap\">\n      <div ng-if=\"$ctrl.albums\" ng-repeat=\"album in $ctrl.albums\">\n        <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n      </div>\n    </div>\n</div>";
+	module.exports = "<p ng-if=\"$ctrl.errorMessage\">{{$ctrl.errorMessage}}</p>\n<div class=\"flexy-container\">\n  <ja-rule ng-if=\"$ctrl.jaRule\" \n           class=\"flexy-item\" \n           ja-rule=\"$ctrl.jaRule\" \n           play-track=\"$ctrl.playTrack\"\n           get-tracks=\"$ctrl.getTracks\" \n           error-message=\"$ctrl.errorMessage\">\n  </ja-rule>\n  <search class=\"flexy-item\" set-featured=\"$ctrl.setFeatured\"></search>\n</div>\n<!--<md-button class=\"custom-button\" ng-if=\"$ctrl.artist\" ng-click=\"$ctrl.toggleTopTracks()\">\n  View {{$ctrl.artistName}}'s Top Tracks\n</md-button>-->\n<top-tracks ng-if=\"$ctrl.topTracks\"\n            top-tracks=\"$ctrl.topTracks\" \n            play-track=\"$ctrl.playTrack\" \n            artist-name=\"$ctrl.artistName\">\n</top-tracks>\n<div ng-if=\"$ctrl.featured\">\n   <h3 class=\"center\">Click on The Album Image to Hear a Sampling from the Album</h3>\n   <h2 class=\"center\" style=\"margin-top: 20px; margin-bottom: 20px;\" ng-if=\"$ctrl.artist\">{{$ctrl.featured.artists.items[0].name}}</h2>\n    <div class=\"flexy-wrap\">\n      <div ng-if=\"$ctrl.albums\" ng-repeat=\"album in $ctrl.albums\">\n        <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n      </div>\n    </div>\n</div>";
 
 /***/ },
 /* 10 */
@@ -33757,7 +33800,7 @@
 /* 11 */
 /***/ function(module, exports) {
 
-	module.exports = "<h3>Click here to view Ja Rule's Canon</h3>\n<md-button ng-click=\"$ctrl.toggleJa()\" style=\"margin: auto; background-color: rgba(76,175,80,0.2);\">Ja Rule</md-button>\n\n\n  <section layout=\"row\" flex>\n\n    <md-sidenav class=\"md-sidenav-left\" \n                md-component-id=\"ja\"\n                md-whiteframe=\"4\">\n\n      <md-toolbar class=\"md-theme-indigo\">\n        <h1 class=\"md-toolbar-tools\">Ja Rule</h1>\n      </md-toolbar>\n\n      <md-content layout-margin>\n       \n        <md-button ng-click=\"$ctrl.toggleJa()\" class=\"md-accent\">\n          Close Ja Rule SideNav\n        </md-button>\n        <h3 style=\"margin: 0 auto;\">Click on The Album Image to Hear a Sampling from the Album</h3>\n        <div ng-if=\"$ctrl.jaRule\" ng-repeat=\"album in $ctrl.albums\">\n         <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n        </div>\n\n      </md-content>\n\n    </md-sidenav>\n\n  </section>\n\n";
+	module.exports = "<h3>Click here to view Ja Rule's Canon</h3>\n<md-button ng-click=\"$ctrl.toggleJa()\" class=\"custom-button\">Ja Rule</md-button>\n\n\n  <section layout=\"row\" flex>\n\n    <md-sidenav class=\"md-sidenav-left\" \n                md-component-id=\"ja\"\n                md-whiteframe=\"4\">\n\n      <md-toolbar class=\"md-theme-indigo\">\n        <h1 class=\"md-toolbar-tools\">Ja Rule</h1>\n      </md-toolbar>\n\n      <md-content layout-margin>\n       \n        <md-button ng-click=\"$ctrl.toggleJa()\" class=\"md-accent\">\n          Close Ja Rule SideNav\n        </md-button>\n        <h3 style=\"margin: 0 auto;\">Click on The Album Image to Hear a Sampling from the Album</h3>\n        <div ng-if=\"$ctrl.jaRule\" ng-repeat=\"album in $ctrl.albums\">\n         <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n        </div>\n\n      </md-content>\n\n    </md-sidenav>\n\n  </section>\n\n";
 
 /***/ },
 /* 12 */
@@ -33791,11 +33834,14 @@
 	
 	  this.$onInit = function () {
 	    _this.searchTerm = '';
+	    _this.type = 'artist';
+	    _this.searchOptions = [{ show: 'Artist', type: 'artist' }, { show: 'Album', type: 'album' }];
 	  };
 	
-	  this.query = function (term) {
-	    spotify.search(term).then(function (res) {
-	      _this.setFeatured(res);
+	  //make http request and then call parent method for setting featured for display
+	  this.query = function (term, type) {
+	    spotify.search(term, type).then(function (res) {
+	      _this.setFeatured(res, type);
 	    }).catch(function (err) {
 	      return console.log(err);
 	    });
@@ -33806,10 +33852,51 @@
 /* 13 */
 /***/ function(module, exports) {
 
-	module.exports = "<md-input-container>\n  <input ng-model=\"$ctrl.searchTerm\" type=\"text\" placeholder=\"Search for an Artist or Album\" required>\n  <md-button ng-click=\"$ctrl.query($ctrl.searchTerm)\" style=\"background-color: rgba(76,175,80,0.2);\">Search</md-button>\n</md-input-container>\n";
+	module.exports = "<md-input-container>\n    <input ng-model=\"$ctrl.searchArtist\" type=\"text\" placeholder=\"Search for an Artist or Album\">\n    <md-button ng-click=\"$ctrl.query($ctrl.searchArtist, $ctrl.type)\" class=\"custom-button\">Search</md-button>\n</md-input-container>\n\n<md-radio-group ng-model=\"$ctrl.type\">\n  <md-radio-button ng-repeat=\"option in $ctrl.searchOptions\" ng-value=\"option.type\" aria-label=\"{{option.show}}\">\n    {{option.show}}\n  </md-radio-button>\n</md-radio-group>";
 
 /***/ },
 /* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _topTracks = __webpack_require__(15);
+	
+	var _topTracks2 = _interopRequireDefault(_topTracks);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	exports.default = {
+	  template: _topTracks2.default,
+	  bindings: {
+	    playTrack: '<',
+	    topTracks: '<',
+	    artistName: '<'
+	  },
+	  controller: controller
+	};
+	
+	
+	controller.$inject = ['$mdSidenav'];
+	function controller($mdSidenav) {
+	
+	  this.toggleTopTracks = function () {
+	    $mdSidenav('top').toggle();
+	  };
+	};
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	module.exports = "<section layout=\"row\" flex>\n\n  <md-button class=\"custom-button\" ng-click=\"$ctrl.toggleTopTracks()\">\n    View Top Tracks by {{$ctrl.artistName}}\n  </md-button>\n\n  <md-sidenav class=\"md-sidenav-right\" \n              md-component-id=\"top\"\n              md-whiteframe=\"4\">\n\n    <md-toolbar class=\"md-theme-indigo\">\n      <h1 class=\"md-toolbar-tools\">Top Tracks by {{$ctrl.artistName}}</h1>\n    </md-toolbar>\n\n    <md-content layout-margin>\n      \n      <md-button ng-click=\"$ctrl.toggleTopTracks()\" class=\"md-accent\">\n        Close Top Tracks SideNav\n      </md-button>\n      <h3>Click the Album Art to Hear a Sample From the Track</h3>\n      <div ng-if=\"$ctrl.topTracks\">\n        <md-content>\n          <md-list flex>\n            <md-list-item class=\"md-3-line disable-md-clickable\" \n                          ng-repeat=\"track in $ctrl.topTracks.tracks\"\n                          ng-click=\"$ctrl.playTrack(track.preview_url)\">\n              <img ng-src=\"{{track.album.images[2].url}}\" class=\"md-avatar\" alt=\"\">\n              <div class=\"md-list-item-text\" layout=\"column\">\n                <h3>{{track.name}}</h3>\n                <h4>On: {{track.album.name}}</h4>\n                <p>Current Popularity: {{track.popularity}}</p>\n              </div>\n            <md-divider ></md-divider>\n            </md-list-item>\n          </md-list>\n        </md-content>\n      </div>\n\n    </md-content>\n\n  </md-sidenav>\n\n</section>";
+
+/***/ },
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -33822,7 +33909,7 @@
 	
 	var _angular2 = _interopRequireDefault(_angular);
 	
-	var _spotifyService = __webpack_require__(15);
+	var _spotifyService = __webpack_require__(17);
 	
 	var _spotifyService2 = _interopRequireDefault(_spotifyService);
 	
@@ -33838,7 +33925,7 @@
 	exports.default = _module.name;
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -33852,7 +33939,6 @@
 	
 	function spotifyService($http, apiUrl) {
 	
-	  var type = '&type=artist';
 	  var jaRule = '1J2VVASYAamtQ3Bt8wGgA6';
 	
 	  function getJa() {
@@ -33861,8 +33947,8 @@
 	    });
 	  }
 	
-	  function search(string) {
-	    return $http.get(apiUrl + '/spotify/search?q=' + string + '&' + type).then(function (res) {
+	  function search(string, type) {
+	    return $http.get(apiUrl + '/spotify/search?q=' + string + '&type=' + type).then(function (res) {
 	      return res.data;
 	    });
 	  }
@@ -33879,42 +33965,49 @@
 	    });
 	  }
 	
+	  function getTopTracks(id) {
+	    return $http.get(apiUrl + '/spotify/topTracks/' + id).then(function (res) {
+	      return res.data;
+	    });
+	  }
+	
 	  return {
 	    getJa: getJa,
 	    search: search,
 	    getArtistAlbums: getArtistAlbums,
-	    getAlbumTracks: getAlbumTracks
+	    getAlbumTracks: getAlbumTracks,
+	    getTopTracks: getTopTracks
 	  };
 	}
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Should already be required, here for clarity
 	__webpack_require__(1);
 	
 	// Load Angular and dependent libs
-	__webpack_require__(17);
 	__webpack_require__(19);
+	__webpack_require__(21);
 	
 	// Now load Angular Material
-	__webpack_require__(21);
+	__webpack_require__(23);
 	
 	// Export namespace
 	module.exports = 'ngMaterial';
 
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(18);
+	__webpack_require__(20);
 	module.exports = 'ngAnimate';
 
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports) {
 
 	/**
@@ -38074,15 +38167,15 @@
 
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(20);
+	__webpack_require__(22);
 	module.exports = 'ngAria';
 
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	/**
@@ -38490,7 +38583,7 @@
 
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports) {
 
 	/*!
@@ -71445,16 +71538,16 @@
 	})(window, window.angular);;window.ngMaterial={version:{full: "1.1.1"}};
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 23 */,
-/* 24 */,
 /* 25 */,
-/* 26 */
+/* 26 */,
+/* 27 */,
+/* 28 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
