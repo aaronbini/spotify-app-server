@@ -33666,16 +33666,14 @@
 	  this.setFeatured = function (featured, type) {
 	    _this.errorMessage = null;
 	    _this.featured = featured;
-	    _this.artistName = _this.featured.artists.items[0].name;
 	    //set variable to hold Promises
 	    var resolve = void 0;
 	
 	    if (type === 'artist') {
-	      // this.artist = true;
+	      _this.artistName = _this.featured.artists.items[0].name;
 	      var id = featured.artists.items[0].id;
 	      resolve = Promise.all([spotify.getArtistAlbums(id), spotify.getTopTracks(id)]);
 	    } else {
-	      // this.artist = false;
 	      _this.albums = featured.albums.items;
 	      resolve = Promise.resolve([_this.albums, null]);
 	    }
