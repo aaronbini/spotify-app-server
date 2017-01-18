@@ -33670,10 +33670,12 @@
 	    var resolve = void 0;
 	
 	    if (type === 'artist') {
+	      _this.artist = true;
 	      _this.artistName = _this.featured.artists.items[0].name;
 	      var id = featured.artists.items[0].id;
 	      resolve = Promise.all([spotify.getArtistAlbums(id), spotify.getTopTracks(id)]);
 	    } else {
+	      _this.artist = false;
 	      _this.albums = featured.albums.items;
 	      resolve = Promise.resolve([_this.albums, null]);
 	    }
@@ -33742,7 +33744,7 @@
 /* 9 */
 /***/ function(module, exports) {
 
-	module.exports = "<p ng-if=\"$ctrl.errorMessage\">{{$ctrl.errorMessage}}</p>\n<div class=\"flexy-container\">\n  <ja-rule ng-if=\"$ctrl.jaRule\" \n           class=\"flexy-item\" \n           ja-rule=\"$ctrl.jaRule\" \n           play-track=\"$ctrl.playTrack\"\n           get-tracks=\"$ctrl.getTracks\" \n           error-message=\"$ctrl.errorMessage\">\n  </ja-rule>\n  <search class=\"flexy-item\" set-featured=\"$ctrl.setFeatured\"></search>\n</div>\n<!--<md-button class=\"custom-button\" ng-if=\"$ctrl.artist\" ng-click=\"$ctrl.toggleTopTracks()\">\n  View {{$ctrl.artistName}}'s Top Tracks\n</md-button>-->\n<top-tracks ng-if=\"$ctrl.topTracks\"\n            top-tracks=\"$ctrl.topTracks\" \n            play-track=\"$ctrl.playTrack\" \n            artist-name=\"$ctrl.artistName\">\n</top-tracks>\n<div ng-if=\"$ctrl.featured\">\n   <h3 class=\"center\">Click on The Album Image to Hear a Sampling from the Album</h3>\n   <h2 class=\"center\" style=\"margin-top: 20px; margin-bottom: 20px;\" ng-if=\"$ctrl.artist\">{{$ctrl.featured.artists.items[0].name}}</h2>\n    <div class=\"flexy-wrap\">\n      <div ng-if=\"$ctrl.albums\" ng-repeat=\"album in $ctrl.albums\">\n        <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n      </div>\n    </div>\n</div>";
+	module.exports = "<p ng-if=\"$ctrl.errorMessage\">{{$ctrl.errorMessage}}</p>\n<div class=\"flexy-container\">\n  <ja-rule ng-if=\"$ctrl.jaRule\" \n           class=\"flexy-item\" \n           ja-rule=\"$ctrl.jaRule\" \n           play-track=\"$ctrl.playTrack\"\n           get-tracks=\"$ctrl.getTracks\" \n           error-message=\"$ctrl.errorMessage\">\n  </ja-rule>\n  <search class=\"flexy-item\" set-featured=\"$ctrl.setFeatured\"></search>\n</div>\n\n<top-tracks ng-if=\"$ctrl.topTracks\"\n            top-tracks=\"$ctrl.topTracks\" \n            play-track=\"$ctrl.playTrack\" \n            artist-name=\"$ctrl.artistName\"\n            artist=\"$ctrl.artist\">\n</top-tracks>\n<div ng-if=\"$ctrl.featured\">\n   <h3 class=\"center\">Click on The Album Image to Hear a Sampling from the Album</h3>\n   <h2 class=\"center\" style=\"margin-top: 20px; margin-bottom: 20px;\" ng-if=\"$ctrl.artist\">{{$ctrl.featured.artists.items[0].name}}</h2>\n    <div class=\"flexy-wrap\">\n      <div ng-if=\"$ctrl.albums\" ng-repeat=\"album in $ctrl.albums\">\n        <a ng-click=\"$ctrl.playTrack(album.preview)\"><img ng-src=\"{{album.images[1].url}}\" alt=\"\"></a>\n      </div>\n    </div>\n</div>";
 
 /***/ },
 /* 10 */
@@ -33873,7 +33875,8 @@
 	  bindings: {
 	    playTrack: '<',
 	    topTracks: '<',
-	    artistName: '<'
+	    artistName: '<',
+	    artist: '<'
 	  },
 	  controller: controller
 	};
@@ -33891,7 +33894,7 @@
 /* 15 */
 /***/ function(module, exports) {
 
-	module.exports = "<section layout=\"row\" flex>\n\n  <md-button class=\"custom-button\" ng-click=\"$ctrl.toggleTopTracks()\">\n    View Top Tracks by {{$ctrl.artistName}}\n  </md-button>\n\n  <md-sidenav class=\"md-sidenav-right\" \n              md-component-id=\"top\"\n              md-whiteframe=\"4\">\n\n    <md-toolbar class=\"md-theme-indigo\">\n      <h1 class=\"md-toolbar-tools\">Top Tracks by {{$ctrl.artistName}}</h1>\n    </md-toolbar>\n\n    <md-content layout-margin>\n      \n      <md-button ng-click=\"$ctrl.toggleTopTracks()\" class=\"md-accent\">\n        Close Top Tracks SideNav\n      </md-button>\n      <h3>Click the Album Art to Hear a Sample From the Track</h3>\n      <div ng-if=\"$ctrl.topTracks\">\n        <md-content>\n          <md-list flex>\n            <md-list-item class=\"md-3-line disable-md-clickable\" \n                          ng-repeat=\"track in $ctrl.topTracks.tracks\"\n                          ng-click=\"$ctrl.playTrack(track.preview_url)\">\n              <img ng-src=\"{{track.album.images[2].url}}\" class=\"md-avatar\" alt=\"\">\n              <div class=\"md-list-item-text\" layout=\"column\">\n                <h3>{{track.name}}</h3>\n                <h4>On: {{track.album.name}}</h4>\n                <p>Current Popularity: {{track.popularity}}</p>\n              </div>\n            <md-divider ></md-divider>\n            </md-list-item>\n          </md-list>\n        </md-content>\n      </div>\n\n    </md-content>\n\n  </md-sidenav>\n\n</section>";
+	module.exports = "<section layout=\"row\" flex>\n\n  <md-button ng-if=\"$ctrl.artist\" class=\"custom-button\" ng-click=\"$ctrl.toggleTopTracks()\">\n    View Top Tracks by {{$ctrl.artistName}}\n  </md-button>\n\n  <md-sidenav class=\"md-sidenav-right\" \n              md-component-id=\"top\"\n              md-whiteframe=\"4\">\n\n    <md-toolbar class=\"md-theme-indigo\">\n      <h1 class=\"md-toolbar-tools\">Top Tracks by {{$ctrl.artistName}}</h1>\n    </md-toolbar>\n\n    <md-content layout-margin>\n      \n      <md-button ng-click=\"$ctrl.toggleTopTracks()\" class=\"md-accent\">\n        Close Top Tracks SideNav\n      </md-button>\n      <h3>Click the Album Art to Hear a Sample From the Track</h3>\n      <div ng-if=\"$ctrl.topTracks\">\n        <md-content>\n          <md-list flex>\n            <md-list-item class=\"md-3-line disable-md-clickable\" \n                          ng-repeat=\"track in $ctrl.topTracks.tracks\"\n                          ng-click=\"$ctrl.playTrack(track.preview_url)\">\n              <img ng-src=\"{{track.album.images[2].url}}\" class=\"md-avatar\" alt=\"\">\n              <div class=\"md-list-item-text\" layout=\"column\">\n                <h3>{{track.name}}</h3>\n                <h4>On: {{track.album.name}}</h4>\n                <p>Current Popularity: {{track.popularity}}</p>\n              </div>\n            <md-divider></md-divider>\n            </md-list-item>\n          </md-list>\n        </md-content>\n      </div>\n\n    </md-content>\n\n  </md-sidenav>\n\n</section>";
 
 /***/ },
 /* 16 */
